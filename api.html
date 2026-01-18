@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistem MTs Al Irsyad Bondowoso</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Poppins', 'sans-serif'] },
+          colors: { primary: '#4F46E5', secondary: '#10B981', accent: '#F59E0B' }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { 
+        background-color: #f3f4f6; 
+        background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%); 
+        background-attachment: fixed; 
+        background-size: cover; 
+        color: #1f2937; 
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Desktop Glass Effect Only */
+    @media (min-width: 768px) {
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); }
+    }
+    /* Mobile Solid Panel for Performance */
+    @media (max-width: 767px) {
+        .glass-panel { background: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        main.glass-panel { background: rgba(255, 255, 255, 0.98); }
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .input-modern { background: #f9fafb; border: 1px solid #e5e7eb; transition: all 0.3s ease; }
+    .input-modern:focus { border-color: #4F46E5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); background: white; }
+    
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
+    
+    #loading-overlay { background: rgba(255,255,255,0.8); backdrop-filter: blur(5px); }
+    
+    /* Table Styles */
+    .rekap-table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 0.75rem; }
+    .rekap-table th { background: #eef2ff; color: #4338ca; font-weight: 700; padding: 10px; text-align: left; border-bottom: 2px solid #c7d2fe; white-space: nowrap; }
+    .rekap-table td { padding: 8px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; color: #4b5563; }
+    .rekap-table tr:hover td { background: #f9fafb; }
+    
+    .clickable-card { cursor: pointer; transition: transform 0.1s; touch-action: manipulation; }
+    .clickable-card:active { transform: scale(0.98); }
+    
+    /* Navigation Styles Optimized */
+    .nav-btn { touch-action: manipulation; position: relative; overflow: hidden; }
+    
+    /* Active State Indicator for Mobile */
+    .nav-btn.active::after {
+        content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 40%; height: 3px; background-color: currentColor; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px;
+    }
+    @media (min-width: 768px) {
+        .nav-btn.active::after { top: auto; bottom: 0; left: 0; transform: none; width: 4px; height: 100%; border-radius: 0; }
+    }
+
+    /* PERFORMANCE OPTIMIZATIONS */
+    .fast-scroll-container { content-visibility: auto; contain-intrinsic-size: 50px 500px; will-change: scroll-position; -webkit-overflow-scrolling: touch; }
+    .simple-row { transform: translateZ(0); }
+
+    /* Warna header tabel nilai */
+    .th-tugas { background-color: #ecfdf5 !important; color: #047857 !important; }
+    .th-kuis { background-color: #fffbeb !important; color: #b45309 !important; }
+    .th-uh { background-color: #eff6ff !important; color: #1d4ed8 !important; }
+    .th-sts { background-color: #fdf2f8 !important; color: #be185d !important; }
+    .th-sas { background-color: #fff1f2 !important; color: #be123c !important; }
+    .th-final { background-color: #374151 !important; color: #ffffff !important; }
+    
+    .history-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .history-table td { font-size: 0.8rem; }
+  </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+  <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col justify-center items-center hidden">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+    <p class="mt-4 text-primary font-semibold animate-pulse" id="loading-text">Menghubungkan ke Server...</p>
+  </div>
+
+  <!-- Header -->
+  <header class="glass-panel z-40 sticky top-0 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30"><i class="fa-solid fa-school text-sm md:text-lg"></i></div>
+      <div><h1 class="font-bold text-base md:text-lg leading-tight text-gray-800">MTs Al Irsyad</h1><p class="text-[10px] md:text-xs text-gray-500 font-medium" id="status-display">Connecting...</p></div>
+    </div>
+    <div class="text-right hidden md:block"><div class="text-sm font-semibold text-gray-700" id="current-date-display">...</div><div class="text-xs text-primary">Server: Local (cPanel)</div></div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full md:p-4 gap-0 md:gap-4">
+    
+    <!-- OPTIMIZED NAVIGATION -->
+    <nav class="order-2 md:order-1 fixed bottom-0 left-0 right-0 md:static z-50 bg-white md:bg-white/80 md:backdrop-blur-xl border-t border-gray-200 md:border-t-0 md:border md:border-white/40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:shadow-none h-16 md:h-fit md:w-64 md:rounded-2xl md:p-3 flex md:flex-col justify-around md:justify-start items-stretch md:gap-2">
+      
+      <!-- Absensi Tab -->
+      <button onclick="switchTab('absensi')" id="nav-absensi" class="nav-btn group active flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-primary bg-indigo-50 md:bg-primary md:text-white">
+        <i class="fa-solid fa-clipboard-user text-xl md:text-lg mb-1 md:mb-0"></i> 
+        <span class="text-[10px] md:text-sm font-medium">Absensi</span>
+      </button>
+
+      <!-- Jurnal Tab -->
+      <button onclick="switchTab('jurnal')" id="nav-jurnal" class="nav-btn group flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-gray-400 hover:bg-gray-50 md:hover:bg-white/50">
+        <i class="fa-solid fa-book-open text-xl md:text-lg mb-1 md:mb-0"></i> 
+        <span class="text-[10px] md:text-sm font-medium">Jurnal</span>
+      </button>
+
+      <!-- Nilai Tab -->
+      <button onclick="switchTab('penilaian')" id="nav-penilaian" class="nav-btn group flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-gray-400 hover:bg-gray-50 md:hover:bg-white/50">
+        <i class="fa-solid fa-star text-xl md:text-lg mb-1 md:mb-0"></i> 
+        <span class="text-[10px] md:text-sm font-medium">Nilai</span>
+      </button>
+
+      <!-- Rekap Tab -->
+      <button onclick="switchTab('rekap')" id="nav-rekap" class="nav-btn group flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-gray-400 hover:bg-gray-50 md:hover:bg-white/50">
+        <i class="fa-solid fa-file-excel text-xl md:text-lg mb-1 md:mb-0"></i> 
+        <span class="text-[10px] md:text-sm font-medium">Laporan</span>
+      </button>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-1 glass-panel md:rounded-2xl p-4 md:p-6 overflow-y-auto no-scrollbar order-1 md:order-2 pb-20 md:pb-6 relative h-full fast-scroll-container">
+      
+      <!-- Section Absensi -->
+      <section id="section-absensi" class="animate-slide-in pb-10">
+        <div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-primary"><i class="fa-solid fa-users text-xl"></i></div><h2 class="text-xl font-bold text-gray-800">Input Kehadiran</h2></div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          <div class="col-span-2 md:col-span-1"><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Tanggal</label><input type="date" id="att-date" class="input-modern w-full p-2.5 rounded-xl text-sm font-medium"></div>
+          <div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Kelas</label><select id="att-class" class="input-modern w-full p-2.5 rounded-xl text-sm font-medium"><option value="">Pilih...</option><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select></div>
+          <div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Mapel</label><select id="att-subject" class="input-modern w-full p-2.5 rounded-xl text-sm font-medium"><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select></div>
+        </div>
+        
+        <div class="mb-4">
+            <label class="text-xs font-semibold text-gray-500 uppercase ml-1 block mb-2">Jam Ke (Bisa pilih lebih dari 1)</label>
+            <div class="flex flex-wrap gap-2" id="session-buttons-container"></div>
+        </div>
+
+        <!-- Bukti Foto -->
+        <div class="mb-6 bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+            <label class="text-xs font-bold text-gray-700 uppercase block mb-2">Bukti Foto Kegiatan (Wajib)</label>
+            <div id="cam-init-view" class="text-center p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl">
+                <div class="w-12 h-12 bg-indigo-100 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-2"><i class="fa-solid fa-camera text-xl"></i></div>
+                <p class="text-[10px] text-gray-400 mb-3">Ambil foto langsung</p>
+                <button type="button" onclick="startCamera()" class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md active:scale-95 transition-transform">Buka Kamera</button>
+            </div>
+            <div id="cam-live-view" class="hidden relative w-full bg-black rounded-xl overflow-hidden aspect-[4/3]">
+                <video id="video-feed" autoplay playsinline class="w-full h-full object-cover"></video>
+                <div class="absolute bottom-0 left-0 right-0 p-4 flex justify-center items-center gap-6 bg-gradient-to-t from-black/50 to-transparent">
+                    <button type="button" onclick="stopCamera()" class="text-white bg-gray-500/50 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" onclick="capturePhoto()" class="w-14 h-14 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center shadow-lg active:scale-90 transition-transform"><div class="w-12 h-12 bg-red-500 rounded-full border-2 border-white"></div></button>
+                    <button type="button" onclick="switchCameraMode()" class="text-white bg-gray-500/50 rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+            </div>
+            <div id="cam-result-view" class="hidden relative w-full aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
+                <img id="img-result" class="w-full h-full object-cover">
+                <button type="button" onclick="resetCamera()" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 text-gray-800 px-4 py-2 rounded-full text-xs font-bold shadow-lg backdrop-blur border border-gray-200 active:scale-95"><i class="fa-solid fa-rotate-left text-indigo-500 mr-1"></i> Foto Ulang</button>
+            </div>
+            <canvas id="hidden-canvas" class="hidden"></canvas>
+        </div>
+        
+        <div id="student-list-wrapper" class="bg-gray-50/50 rounded-2xl border border-dashed border-gray-300 min-h-[200px] flex items-center justify-center"><div class="text-center text-gray-400 p-8"><i class="fa-solid fa-filter text-4xl mb-2 opacity-50"></i><p>Silakan pilih Kelas, Tanggal & Jam<br>untuk memuat data siswa.</p></div></div>
+        
+        <div class="mt-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
+                <h3 class="font-bold text-gray-700 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Riwayat Input</h3>
+                 <div class="bg-indigo-50/50 p-1 rounded-lg border border-indigo-100 flex gap-2 w-full md:w-auto">
+                      <input type="date" id="hist-filter-date" class="w-full text-xs p-2 rounded border" onchange="pageAtt=1; renderAttendanceHistory()" placeholder="Filter Tanggal">
+                      <button onclick="document.getElementById('hist-filter-date').value=''; pageAtt=1; renderAttendanceHistory();" class="bg-white px-3 py-1 rounded border text-xs text-gray-500 hover:bg-gray-50">Reset</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+                <table class="w-full text-left history-table">
+                    <thead class="bg-indigo-50 text-indigo-700">
+                        <tr>
+                            <th class="p-3 rounded-tl-xl">Tanggal</th>
+                            <th class="p-3">Kelas / Mapel</th>
+                            <th class="p-3 text-center hidden md:table-cell">Statistik</th>
+                            <th class="p-3 text-center">Bukti</th>
+                            <th class="p-3 text-right rounded-tr-xl">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-history-body" class="divide-y divide-gray-100">
+                        <tr><td colspan="5" class="p-4 text-center text-xs text-gray-400">Menunggu Sinkronisasi...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="pagination-att" class="flex justify-center gap-4 mt-4 text-xs font-bold text-gray-500"></div>
+        </div>
+      </section>
+
+      <!-- Section Jurnal -->
+      <section id="section-jurnal" class="hidden animate-slide-in pb-10">
+        <div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-secondary"><i class="fa-solid fa-pen-nib text-xl"></i></div><h2 class="text-xl font-bold text-gray-800">Jurnal Mengajar</h2></div>
+        <form id="journal-form" class="space-y-4">
+          <input type="hidden" id="jrn-id" value="">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Tanggal</label><input type="date" id="jrn-date" class="input-modern w-full p-3 rounded-xl text-sm"></div><div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Kelas</label><select id="jrn-class" class="input-modern w-full p-3 rounded-xl text-sm"><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select></div></div>
+          <div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Mata Pelajaran</label><select id="jrn-subject" class="input-modern w-full p-3 rounded-xl text-sm"><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select></div>
+          <div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Materi / Topik</label><input type="text" id="jrn-topic" placeholder="Cth: Aljabar Linear" class="input-modern w-full p-3 rounded-xl text-sm"></div>
+          <div><label class="text-xs font-semibold text-gray-500 uppercase ml-1">Catatan Kejadian</label><textarea id="jrn-notes" rows="3" placeholder="Kendala siswa, catatan khusus..." class="input-modern w-full p-3 rounded-xl text-sm resize-none"></textarea></div>
+          <div class="flex gap-2"><button type="submit" id="btn-save-jurnal" class="flex-1 bg-secondary hover:bg-emerald-600 text-white font-semibold p-4 rounded-xl shadow-lg shadow-emerald-500/30 transition-transform transform active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-save"></i> Simpan Jurnal</button><button type="button" onclick="resetJournalForm()" id="btn-reset-jurnal" class="hidden bg-gray-200 hover:bg-gray-300 text-gray-600 font-semibold p-4 rounded-xl transition-all"><i class="fa-solid fa-xmark"></i></button></div>
+        </form>
+        <div class="mt-8">
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">Riwayat Jurnal (Max 5/Page)</h3>
+            <div id="journal-list" class="space-y-3 fast-scroll-container"></div>
+            <div id="pagination-jrn" class="flex justify-center gap-4 mt-4 text-xs font-bold text-gray-500"></div>
+        </div>
+      </section>
+
+      <!-- Section Penilaian -->
+      <section id="section-penilaian" class="hidden animate-slide-in pb-10">
+        <div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-accent"><i class="fa-solid fa-trophy text-xl"></i></div><h2 class="text-xl font-bold text-gray-800">Input Nilai</h2></div>
+        
+        <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100 mb-6 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+              <select id="grade-class" class="input-modern w-full p-2 rounded-lg text-sm"><option value="">Pilih Kelas</option><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select>
+              <div class="flex gap-2">
+                  <select id="grade-type" class="input-modern w-2/3 p-2 rounded-lg text-sm"><option value="Tugas">Tugas</option><option value="Kuis">Kuis</option><option value="UH">UH</option><option value="STS">STS</option><option value="SAS">SAS</option></select>
+                  <select id="grade-number" class="input-modern w-1/3 p-2 rounded-lg text-sm text-center"><option value="1">Ke-1</option><option value="2">Ke-2</option><option value="3">Ke-3</option><option value="4">Ke-4</option><option value="5">Ke-5</option><option value="6">Ke-6</option><option value="7">Ke-7</option><option value="8">Ke-8</option><option value="9">Ke-9</option><option value="10">Ke-10</option></select>
+              </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3"><select id="grade-subject" class="input-modern w-full p-2 rounded-lg text-sm"><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select><input type="date" id="grade-date" class="input-modern w-full p-2 rounded-lg text-sm"></div>
+        </div>
+
+        <div id="grade-list-wrapper" class="bg-gray-50/50 rounded-2xl border border-dashed border-gray-300 min-h-[150px] flex items-center justify-center mb-6"><div class="text-center text-gray-400 p-8"><i class="fa-solid fa-list-ol text-4xl mb-2 opacity-50"></i><p>Pilih Kelas untuk menampilkan siswa.</p></div></div>
+        
+        <h3 class="font-bold text-gray-700 mb-2 mt-8 px-1">Riwayat Penilaian</h3>
+        <div class="flex gap-2 mb-3">
+             <select id="hist-filter-grade-subject" onchange="pageGrade=1; renderGradeHistory()" class="text-xs p-2 rounded border w-1/2"><option value="">Semua Mapel</option><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select>
+             <select id="hist-filter-grade-type" onchange="pageGrade=1; renderGradeHistory()" class="text-xs p-2 rounded border w-1/2"><option value="">Semua Kategori</option><option value="Tugas">Tugas</option><option value="Kuis">Kuis</option><option value="UH">UH</option><option value="STS">STS</option><option value="SAS">SAS</option></select>
+        </div>
+        
+        <div class="overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-200">
+            <table class="w-full text-left history-table">
+                <thead class="bg-amber-50 text-amber-700">
+                    <tr>
+                        <th class="p-3 rounded-tl-xl">Tanggal</th>
+                        <th class="p-3">Kelas / Mapel</th>
+                        <th class="p-3">Keterangan</th>
+                        <th class="p-3 text-center">Siswa</th>
+                        <th class="p-3 text-right rounded-tr-xl">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="grade-history-body" class="divide-y divide-gray-100">
+                     <tr><td colspan="5" class="p-4 text-center text-xs text-gray-400">Menunggu Sinkronisasi...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="pagination-grade" class="flex justify-center gap-4 mt-4 text-xs font-bold text-gray-500"></div>
+      </section>
+
+      <!-- Section Rekap -->
+      <section id="section-rekap" class="hidden animate-slide-in pb-10">
+        <div class="flex items-center gap-3 mb-6"><div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i class="fa-solid fa-file-excel text-xl"></i></div><h2 class="text-xl font-bold text-gray-800">Pusat Laporan</h2></div>
+        <div class="flex space-x-2 mb-4 overflow-x-auto pb-2"><button onclick="switchReport('absensi')" id="tab-rep-absensi" class="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-md transition-all">Absensi</button><button onclick="switchReport('jurnal')" id="tab-rep-jurnal" class="px-4 py-2 rounded-lg text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 border transition-all">Jurnal</button><button onclick="switchReport('nilai')" id="tab-rep-nilai" class="px-4 py-2 rounded-lg text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 border transition-all">Nilai</button></div>
+        
+        <div id="report-absensi" class="report-content">
+            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6 shadow-sm"><div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end"><div class="col-span-2 md:col-span-1"><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Kelas</label><select id="rekap-class" class="input-modern w-full p-2 rounded-lg text-xs font-medium"><option value="">-- Pilih --</option><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select></div><div><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Dari</label><input type="date" id="rekap-start" class="input-modern w-full p-2 rounded-lg text-xs"></div><div><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Sampai</label><input type="date" id="rekap-end" class="input-modern w-full p-2 rounded-lg text-xs"></div><div><button onclick="renderRekapAbsensi()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg text-xs font-bold shadow-md mb-2"><i class="fa-solid fa-magnifying-glass mr-1"></i> Cari</button></div></div></div>
+            <div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-gray-700">Ringkasan (<span id="rekap-count">0</span>)</h3><div class="flex gap-2"><button onclick="exportAbsensiToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Excel</button></div></div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto"><table class="rekap-table" id="table-absensi"><thead><tr><th class="text-left">Nama Siswa</th><th class="text-green-600">H</th><th class="text-blue-600">S</th><th class="text-yellow-600">I</th><th class="text-red-600">A</th><th>Total</th></tr></thead><tbody id="rekap-table-body"><tr><td colspan="6" class="p-6 text-center text-gray-400">Pilih Kelas dan Klik Cari</td></tr></tbody></table></div>
+        </div>
+
+        <div id="report-jurnal" class="report-content hidden">
+             <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 mb-6 shadow-sm"><div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end"><div><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Kelas</label><select id="jurnal-filter-class" class="input-modern w-full p-2 rounded-lg text-xs font-medium"><option value="">Semua</option><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select></div><div class="col-span-2 md:col-span-1"><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Mapel</label><select id="jurnal-filter-subject" class="input-modern w-full p-2 rounded-lg text-xs font-medium"><option value="">Semua</option><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select></div><div><button onclick="renderRekapJurnal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg text-xs font-bold shadow-md mb-2">Cari</button></div></div></div>
+             <div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-gray-700">Daftar Jurnal</h3><div class="flex gap-2"><button onclick="exportJurnalToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Excel</button></div></div>
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto"><table class="rekap-table" id="table-jurnal"><thead><tr><th class="text-left">Tanggal</th><th>Kelas</th><th>Mapel</th><th>Materi</th><th class="text-left">Catatan</th></tr></thead><tbody id="jurnal-table-body"><tr><td colspan="5" class="p-6 text-center text-gray-400">Klik Cari...</td></tr></tbody></table></div>
+        </div>
+
+        <div id="report-nilai" class="report-content hidden">
+             <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100 mb-6 shadow-sm"><div class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end"><div><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Kelas (Wajib)</label><select id="nilai-filter-class" class="input-modern w-full p-2 rounded-lg text-xs font-medium"><option value="">-- Pilih --</option><option value="7A">7A</option><option value="7B">7B</option><option value="8A">8A</option><option value="8B">8B</option><option value="9A">9A</option><option value="9B">9B</option></select></div><div class="col-span-2 md:col-span-1"><label class="text-[10px] text-gray-500 font-semibold mb-1 block">Mapel (Wajib)</label><select id="nilai-filter-subject" class="input-modern w-full p-2 rounded-lg text-xs font-medium"><option value="">-- Pilih --</option><option value="Matematika">Matematika</option><option value="IPA">IPA</option><option value="B. Inggris">B. Inggris</option><option value="B. Indonesia">B. Indonesia</option><option value="Fiqh">Fiqh</option><option value="Tafsir">Tafsir</option><option value="Hadits Nabawi">Hadits Nabawi</option><option value="Siroh Nabawi">Siroh Nabawi</option><option value="Tajwid">Tajwid</option><option value="Nahwu">Nahwu</option><option value="Shorof">Shorof</option><option value="Mutholaah">Mutholaah</option><option value="Imla'">Imla'</option><option value="Tad Lughawi">Tad Lughawi</option><option value="IPS">IPS</option><option value="PKN">PKN</option><option value="Wali Akademik">Wali Akademik</option><option value="Akhlaq">Akhlaq</option><option value="TIK">TIK</option><option value="Tauhid">Tauhid</option></select></div><div><button onclick="renderRekapNilai()" class="w-full bg-amber-600 hover:bg-amber-700 text-white p-2 rounded-lg text-xs font-bold shadow-md mb-2">Tampilkan</button></div></div></div>
+             <div class="flex justify-between items-center mb-3"><h3 class="text-xs font-bold text-gray-700">Rincian Nilai (Pivot)</h3><div class="flex gap-2"><button onclick="exportNilaiToExcel()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Excel</button></div></div>
+             <div class="flex flex-wrap gap-2 mb-2 text-[10px] font-semibold text-gray-500"><span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded border border-emerald-100">Tugas: 20%</span><span class="bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-100">Kuis: 10%</span><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">UH: 25%</span><span class="bg-pink-50 text-pink-700 px-2 py-1 rounded border border-pink-100">STS: 15%</span><span class="bg-red-50 text-red-700 px-2 py-1 rounded border border-red-100">SAS: 30%</span></div>
+             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto"><table class="rekap-table" id="table-nilai"><thead><tr id="nilai-table-head"><th class="text-left">Nama Siswa</th><th class="text-right">Nilai</th></tr></thead><tbody id="nilai-table-body"><tr><td colspan="2" class="p-6 text-center text-gray-400">Pilih Kelas & Mapel...</td></tr></tbody></table></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // ==========================================
+    // DATA SISWA
+    // ==========================================
+    const studentsByClass = { 
+        "7A": ["ADAM SHAKA ROSYAD", "AHMAD RIFQY ALGHIFARY", "AHMAD RUWIYAN GIOFANI", "AKMAL ABRISAM", "ALI ISMAIL BAHANAN", "ARSHAKA SYAFI HAEKAL", "FAHRI BALASYRAF", "HAIKAL AHMAD IMAM", "HILAL ZAHRAN", "KHOLID ABDULLOH", "MUHAMMAD IKMAL AMAR", "MUHAMMAD RIZAL", "MUHAMMAD SYAUGI BILFEGIH", "MUHAMMAD ZAHIL MAZIUN", "MUHAMMAD ZAIM", "RAYYAN FAHMI HATIM", "SAIF SYAMLAN", "SALMAN FAIRUZ ZAMAN", "UMAR DAHNAN", "WAAIL HILAL THALIB", "ZAFFAN"], 
+        "7B": ["ABDULLAH GHUFRON", "ADAM BALAFIF", "AHMAD ALFIAN MUBARAK", "AHNAF HELMY THALIB", "ALIF ZAWJAN KARBELA", "ALLENDRA FABIAND KUSUMA", "ALVIN ELBAR", "FATHIR MAZIUN", "GIGIH MOHAMMAD DAUD YUSUF SULAIMAN AN NUR", "JIHAD IBRAHIMMOVIC", "MOCHAMMAD ARYA ADJI SAPUTRA", "MUHAMMAD", "MUHAMMAD HAFIZ NURDY", "MUHAMMAD IKHMAL MAULANA RIZQI", "MUHAMMAD SAIF BAHANAN", "MUHAMMAD SYAFAAT SYAHRIR", "NABIL KHALFANI AMIN", "RAFIF HUSNI MAZIUN", "SABIL FIRHAD BIN THALIB", "UMAR SYARIF BAHAMISAH"], 
+        "8A": ["ABDULLAH AHWAZ IBAAD", "AFFAN NUR MAJID", "AFREZA RIFATUL ILMI.D", "ARMAND JANUARTA KUSUMA", "AZZRA SYATHIR ANGGARA", "BASSAM BAHANAN", "ERLANGGA BAKHTIAR ADINATA WIJAYA", "FUAD ABDULLAH SYAMLAN", "HAIDAR AHMAD A. RAZY", "HUSEIN SYARIF BAHAMISAH", "IBRAHIM", "KANZA FIRDAUS PRASETYO", "M. AZZAM SAAJID HIDAYAT", "MARCHIZAM ZAHIR MUHAMMAD", "MILHAN AMIRZAN BIN THALIB", "MOH. IHSAN MAULANA", "MOHAMMAD SAMSOEL ROHMAN CAMMELLO LUIND", "MUHAMMAD", "MUHAMMAD ALTHAF ARKAN LABIB", "MUHAMMAD GIBRAN ALKAUTSAR", "MUHAMMAD LUTHFI WIBOWO", "MUHAMMAD MARTAK", "MUHAMMAD NAUFAL SYAKIR ZAINUSSOFI", "NAZREY IQBAL NURSALIM", "QAF RAUSAN FIKRI ARYAN KAYSAN", "RAFAEL GHIBRAN", "SAFWAN RAYHAN SHIDQI", "SALMAN ALI BAFADAL", "UKKASYAH HAMDI", "ZAMIR MAZIUN"], 
+        "8B": ["ABDURRAHMAN FAHMI SYAMMAKH", "AGHA FAUZI WIBOWO", "AHMAD IRSYAAD", "AHMAD ZAYYID", "ALBERDO ELDI FAKHRIZI", "ANDIKA KALANI ARKANA", "AZZAM AZZAIDAN NABIL", "BASSAM BILFEGIH", "BISMA LAKESWARA SUSANTO", "FADHIL MIGDAD", "FAIZAL AKBAR IBNA LISFA", "FAUZAN AKBAR THAHARA", "HAIDAR SAFARAZ ZAMAN", "HANIE ALTAF ZULKARNAIN", "LABIB AZZAM FAZLI", "MAHER TORIQ MAHRI", "MUHAMMAD ABDULLAH", "MUHAMMAD ABDUR ROUF", "MUHAMMAD ALHAFIZI RIDHWAN", "MUHAMMAD FAHMI", "MUHAMMAD FARHAN ALFARISI", "MUHAMMAD HABIBUR RAHMAN", "MUHAMMAD HAMMAM ASYRAF FADHILAH", "MUHAMMAT RIFAT", "NAWAF HASAN", "NAZREY IHSAN NURSALIM", "RAFA MUHAMMAD ALFATH", "RISKI ADITIA PUTRA ARIFIN", "SYAFIQ", "SYAIFUL RAHMAN"], 
+        "9A": ["ABDI RAFANSYAH NANDA RASYID", "ABDUL MAJID MAZIUN", "AHMAD MAULANA SYAFIQIS SYADDAD", "BILAL AHMAD FAIZAN", "FARREL SALEH THALIB", "FATHI BALASYROF", "GHAHTAN SUNGKAR", "JADID MUHAMMAD YASIN", "M. RAFA AT-THOYA", "MAHDI BILFEGIH", "MOHAMMAD JIBRIL MUBAROQ", "MOHAMMAD SUHAIMI", "MUHAMMAD AQIL ALHADZIQ", "MUHAMMAD FACHRI ABDUL GHANI", "MUHAMMAD FARHAN SYIBRO ILAHI", "MUHAMMAD HANIS HANZALAH AL-GHAZWANI", "MUHAMMAD RIZQON MAULANA SUDA", "OZIEL ISLAMY FITRA", "RAFI MAZIUN", "RAMZY BAHAYYIL", "SATRIO AKBAR MAULANA", "SYAMIR KARAMAH", "TRISTAN BOBBY AFROZA", "ZHAFIR JAKFAR MAZIUN"], 
+        "9B": ["ABDILAH HAMDUN", "ABDILLAH MUADZ", "ALHAIDAR IBRAHIM", "ALMEER FADHIL ALDANO", "ANAKU RIZKY LANGIT ALGATHANI", "AZKA KHAIRAN SAFARAZ RABBANI", "AZZAM AAQ SYAMSUDDIN", "BI RAFASSYA ARAFAH", "BRISTON HARYONO", "DANENDRA JOSIANO JAVIER ZAHRAN", "FADHIL BALASYROF", "FADLI AMAR", "FARDAN", "GALIH MUHAMMAD GUNADHARMA", "GIOVANI IGO FERNANDO", "MOH MISBAHUL FAIZIN", "MUH. NADIF AL-MAKKAWI", "MUHAMMAD AFFAN ADZ DZAKIR", "MUHAMMAD HAKAM RAZAAN", "NIZAM AHZA RADIKA SURYANTORO", "SHALEH HUSNI MAZIUN", "SHOFA YUDANA", "UMAR FARUQ", "YASDAN FAHMI MARTAK"] 
+    };
+
+    let allData = [];
+    
+    // --- KONFIGURASI API (GANTI URL INI) ---
+    const API_URL = "api.php"; 
+
+    // --- PAGINATION VARIABLES ---
+    let pageAtt = 1;
+    let pageJrn = 1;
+    let pageGrade = 1;
+    const ITEMS_PER_PAGE = 5;
+
+    // --- SESSION/JAM VARIABLE ---
+    let selectedSessions = new Set();
+    let currentProofBase64 = ""; 
+    
+    // --- CAMERA VARIABLES ---
+    let currentStream = null;
+    let cameraFacingMode = 'environment'; 
+
+    // --- HELPER FUNCTIONS ---
+    const getLocalDate = () => { const now = new Date(); const offset = now.getTimezoneOffset(); return new Date(now.getTime() - (offset * 60000)).toISOString().split('T')[0]; };
+    const showLoading = (show) => { document.getElementById('loading-overlay').classList.toggle('hidden', !show); document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; };
+    const showToast = (msg, type = 'success') => { Swal.fire({ toast: true, position: 'top', showConfirmButton: false, timer: 3000, icon: type, title: msg }); };
+
+    // --- API HELPER (PENGGANTI GOOGLE.SCRIPT.RUN) ---
+    async function apiCall(action, payload = null, method = 'GET') {
+        let url = API_URL;
+        if(API_URL.includes("PASTE_URL")) {
+            Swal.fire('Error Konfigurasi', 'URL Google Script belum dipasang di file HTML!', 'error');
+            return [];
+        }
+
+        const options = {
+            method: method,
+            redirect: "follow", // Penting untuk mengikuti redirect Google
+            headers: { "Content-Type": "text/plain;charset=utf-8" }, // Hindari CORS preflight
+        };
+
+        if (method === 'GET') {
+            url += `?action=${action}`;
+        } else {
+            options.body = JSON.stringify({ action: action, data: payload });
+        }
+
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error("Gagal menghubungi server");
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error(error);
+            Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: 'Gagal terhubung ke Database. Periksa koneksi internet Anda.' });
+            return [];
+        }
+    }
+
+    // --- INITIALIZATION ---
+    window.onload = async function() {
+        const today = getLocalDate();
+        document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        
+        if(document.getElementById('att-date')) document.getElementById('att-date').value = today;
+        if(document.getElementById('jrn-date')) document.getElementById('jrn-date').value = today;
+        if(document.getElementById('grade-date')) document.getElementById('grade-date').value = today;
+
+        renderSessionButtons(); 
+
+        showLoading(true);
+        allData = await apiCall('getAllData');
+        document.getElementById('status-display').textContent = `DB: ${allData.length}`;
+        showLoading(false);
+        renderAttendanceHistory(); 
+    };
+
+    // --- PHOTO VIEWER ---
+    window.viewPhoto = (url) => {
+        Swal.fire({
+            imageUrl: url,
+            imageAlt: 'Bukti Foto',
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: 'auto',
+            padding: '1em',
+            background: '#fff'
+        });
+    }
+
+    // --- CAMERA LOGIC ---
+    async function startCamera() {
+        document.getElementById('cam-init-view').classList.add('hidden');
+        document.getElementById('cam-live-view').classList.remove('hidden');
+        document.getElementById('cam-result-view').classList.add('hidden');
+        
+        try {
+            if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); }
+            const constraints = { video: { facingMode: cameraFacingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            const video = document.getElementById('video-feed');
+            video.srcObject = currentStream;
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Akses Kamera Gagal', text: 'Izinkan akses kamera di browser.' });
+            stopCamera();
+        }
+    }
+
+    function stopCamera() {
+        if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); currentStream = null; }
+        document.getElementById('video-feed').srcObject = null;
+        document.getElementById('cam-live-view').classList.add('hidden');
+        if(currentProofBase64) { document.getElementById('cam-result-view').classList.remove('hidden'); } else { document.getElementById('cam-init-view').classList.remove('hidden'); }
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d');
+        const MAX_WIDTH = 500;
+        let w = video.videoWidth; let h = video.videoHeight;
+        if (w > MAX_WIDTH) { h = h * (MAX_WIDTH / w); w = MAX_WIDTH; }
+        canvas.width = w; canvas.height = h;
+        ctx.drawImage(video, 0, 0, w, h);
+        currentProofBase64 = canvas.toDataURL('image/jpeg', 0.5);
+        document.getElementById('img-result').src = currentProofBase64;
+        if (currentStream) { currentStream.getTracks().forEach(track => track.stop()); currentStream = null; }
+        document.getElementById('cam-live-view').classList.add('hidden');
+        document.getElementById('cam-result-view').classList.remove('hidden');
+    }
+
+    function switchCameraMode() { cameraFacingMode = (cameraFacingMode === 'user') ? 'environment' : 'user'; startCamera(); }
+    function resetCamera() { currentProofBase64 = ""; startCamera(); }
+
+    // --- EXCEL EXPORT ---
+    const exportTableToExcel = (tableId, filename) => { 
+        try {
+            const table = document.getElementById(tableId); 
+            if (!table) return; 
+            const template = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table>${table.innerHTML}</table></body></html>`;
+            const blob = new Blob([template], { type: "application/vnd.ms-excel" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${filename}_${new Date().toISOString().split('T')[0]}.xls`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (e) { alert("Gagal download Excel: " + e); }
+    };
+    window.exportAbsensiToExcel = () => exportTableToExcel('table-absensi', 'Rekap_Absensi');
+    window.exportJurnalToExcel = () => exportTableToExcel('table-jurnal', 'Rekap_Jurnal');
+    window.exportNilaiToExcel = () => exportTableToExcel('table-nilai', 'Rekap_Nilai');
+
+    // --- NAVIGATION LOGIC ---
+    window.switchTab = (tabId) => {
+        document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`section-${tabId}`).classList.remove('hidden');
+        document.querySelectorAll('.nav-btn').forEach(el => { el.className = 'nav-btn group flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-gray-400 hover:bg-gray-50 md:hover:bg-white/50'; });
+        const activeEl = document.getElementById(`nav-${tabId}`);
+        if(activeEl) { activeEl.className = `nav-btn group active flex-1 md:flex-none flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-1 md:p-3 rounded-none md:rounded-xl transition-colors text-primary bg-indigo-50 md:bg-primary md:text-white`; }
+        if(tabId === 'rekap') { 
+            if(!document.getElementById('rekap-start').value) { const d = new Date(); document.getElementById('rekap-end').value = d.toISOString().split('T')[0]; d.setDate(1); document.getElementById('rekap-start').value = d.toISOString().split('T')[0]; }
+            switchReport('absensi'); 
+        } else if(tabId === 'absensi') renderAttendanceHistory();
+        else if(tabId === 'jurnal') renderJournalList();
+        else if(tabId === 'penilaian') renderGradeHistory();
+    };
+
+    window.switchReport = (repId) => {
+        document.querySelectorAll('.report-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`report-${repId}`).classList.remove('hidden');
+        ['absensi', 'jurnal', 'nilai'].forEach(id => {
+            const btn = document.getElementById(`tab-rep-${id}`);
+            if(btn) {
+                if(id === repId) { const color = id==='absensi' ? 'bg-blue-600' : id==='jurnal' ? 'bg-emerald-600' : 'bg-amber-600'; btn.className = `px-4 py-2 rounded-lg text-xs font-bold ${color} text-white shadow-md transition-all`; } 
+                else { btn.className = `px-4 py-2 rounded-lg text-xs font-bold bg-white text-gray-500 hover:bg-gray-50 border transition-all`; }
+            }
+        });
+    };
+
+    // --- PAGINATION HELPER ---
+    function renderPaginationControls(containerId, totalItems, currentPage, renderFuncName) {
+        const container = document.getElementById(containerId);
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
+        container.innerHTML = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="${renderFuncName}('prev')" class="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50"><</button><span class="py-1">Hal ${currentPage} / ${totalPages}</span><button ${currentPage === totalPages ? 'disabled' : ''} onclick="${renderFuncName}('next')" class="px-3 py-1 bg-white border rounded hover:bg-gray-50 disabled:opacity-50">></button>`;
+    }
+
+    // --- SESSION/JAM LOGIC ---
+    function renderSessionButtons() {
+        const container = document.getElementById('session-buttons-container');
+        if(!container) return;
+        container.innerHTML = '';
+        for(let i=1; i<=9; i++) {
+            const isActive = selectedSessions.has(i);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `w-10 h-10 rounded-lg text-sm font-bold transition-all border ${isActive ? 'bg-primary text-white border-primary shadow-md transform scale-105' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`;
+            btn.textContent = i;
+            btn.onclick = () => toggleSession(i);
+            container.appendChild(btn);
+        }
+    }
+
+    function toggleSession(i) {
+        if(selectedSessions.has(i)) selectedSessions.delete(i);
+        else selectedSessions.add(i);
+        renderSessionButtons();
+        renderStudentList(); 
+    }
+
+    function getSessionString() {
+        if(selectedSessions.size === 0) return "";
+        const sorted = Array.from(selectedSessions).sort((a,b)=>a-b);
+        return "Jam " + sorted.join(",");
+    }
+
+    // --- RENDER STUDENT LIST (ATTENDANCE) ---
+    window.renderStudentList = () => { 
+        const cls = document.getElementById('att-class').value; 
+        const sub = document.getElementById('att-subject').value; 
+        const date = document.getElementById('att-date').value; 
+        const sessionString = getSessionString();
+        const container = document.getElementById('student-list-wrapper'); 
+        
+        if (!cls) { container.innerHTML = `<div class="text-center text-gray-400 p-8"><i class="fa-solid fa-chalkboard-user text-4xl mb-2 opacity-30"></i><p>Pilih Kelas Terlebih Dahulu</p></div>`; return; } 
+        
+        const students = studentsByClass[cls] || []; 
+        const existingData = allData.filter(d => d.type === 'attendance' && String(d.date).includes(date) && d.class_name === cls && d.subject === sub && (d.grade_title === sessionString || (!d.grade_title && sessionString === "")) ); 
+        
+        const existingMap = {}; existingData.forEach(d => existingMap[d.student_name] = d); 
+        const isEdit = existingData.length > 0;
+        const editBadge = isEdit ? `<span class="text-xs text-indigo-500 bg-white px-2 py-1 rounded-md border border-indigo-100 animate-pulse"><i class="fa-solid fa-pen-to-square mr-1"></i>Mode Edit</span>` : '';
+
+        // Handle Photo Loading in Edit Mode
+        if (isEdit && existingData[0].proof_image) {
+            currentProofBase64 = existingData[0].proof_image;
+            document.getElementById('img-result').src = currentProofBase64;
+            document.getElementById('cam-init-view').classList.add('hidden');
+            document.getElementById('cam-live-view').classList.add('hidden');
+            document.getElementById('cam-result-view').classList.remove('hidden');
+        } else if (!isEdit) {
+            currentProofBase64 = "";
+            document.getElementById('img-result').src = "";
+            document.getElementById('cam-result-view').classList.add('hidden');
+            document.getElementById('cam-live-view').classList.add('hidden');
+            document.getElementById('cam-init-view').classList.remove('hidden');
+        }
+
+        let html = `<div class="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"><div class="flex items-center justify-between p-4 bg-indigo-50 border-b border-indigo-100"><span class="font-bold text-indigo-800 text-sm">Daftar Siswa (${students.length})</span>${editBadge}</div><div class="divide-y divide-gray-100 fast-scroll-container" id="att-rows">`; 
+        
+        students.forEach((s, i) => { 
+            const stat = existingMap[s] ? existingMap[s].status : 'Hadir'; 
+            const id = existingMap[s] ? existingMap[s].__backendId : ''; 
+            const statColor = stat === 'Hadir' ? 'bg-green-50 text-green-700' : stat === 'Izin' ? 'bg-yellow-50 text-yellow-700' : stat === 'Sakit' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'; 
+            
+            html += `<div class="simple-row flex items-center justify-between p-3" data-id="${id}" data-student="${s}"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-xs font-bold">${i+1}</div><span class="font-medium text-gray-700 text-sm">${s}</span></div><select onchange="updateRowColor(this)" class="status-select text-xs font-bold py-1 px-2 rounded-lg border-2 border-gray-200 outline-none ${statColor}"><option value="Hadir" ${stat==='Hadir'?'selected':''}>Hadir</option><option value="Izin" ${stat==='Izin'?'selected':''}>Izin</option><option value="Sakit" ${stat==='Sakit'?'selected':''}>Sakit</option><option value="Alpha" ${stat==='Alpha'?'selected':''}>Alpha</option></select></div>`; 
+        }); 
+        
+        html += `</div><div class="p-4 bg-gray-50 border-t border-gray-100"><button onclick="saveAllAttendance()" class="w-full py-3 bg-primary hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/20 active:scale-95 flex justify-center items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan Data Absensi</button></div></div>`; 
+        container.innerHTML = html; 
+    };
+
+    window.updateRowColor = (select) => { select.className = `status-select text-xs font-bold py-1 px-2 rounded-lg border-2 border-gray-200 outline-none ` + (select.value === 'Hadir' ? 'bg-green-50 text-green-700' : select.value === 'Izin' ? 'bg-yellow-50 text-yellow-700' : select.value === 'Sakit' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'); };
+
+    // --- RENDER GRADE LIST ---
+    window.renderGradeList = () => {
+        const cls = document.getElementById('grade-class').value;
+        const container = document.getElementById('grade-list-wrapper');
+        if(!cls) { container.innerHTML = `<div class="text-center text-gray-400 p-8"><i class="fa-solid fa-list-ol text-4xl mb-2 opacity-30"></i><p class="text-sm">Pilih Kelas</p></div>`; return; }
+        
+        const sub = document.getElementById('grade-subject').value;
+        const type = document.getElementById('grade-type').value;
+        const num = document.getElementById('grade-number').value;
+        const date = document.getElementById('grade-date').value;
+        const fullTitle = `${type} ${num}`;
+        
+        const existingData = allData.filter(d => d.type === 'grade' && d.class_name === cls && d.subject === sub && d.grade_title === fullTitle && String(d.date).includes(date));
+        const existingMap = {}; existingData.forEach(d => existingMap[d.student_name] = d);
+        
+        const students = studentsByClass[cls] || [];
+        const isEdit = existingData.length > 0;
+        const editBadge = isEdit ? `<span class="text-[10px] text-amber-600 bg-white px-2 py-1 rounded border border-amber-100 animate-pulse"><i class="fa-solid fa-pen-to-square mr-1"></i>Mode Edit</span>` : '';
+
+        let html = `<div class="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"><div class="bg-amber-50 p-3 border-b border-amber-100 flex justify-between items-center"><span class="text-amber-800 font-bold text-sm">Input: ${fullTitle}</span>${editBadge}</div><div class="divide-y divide-gray-100 fast-scroll-container" id="grade-rows">`;
+            
+        students.forEach((s, i) => { 
+            const val = existingMap[s] ? existingMap[s].grade_value : ''; 
+            const note = existingMap[s] ? existingMap[s].notes : ''; 
+            const id = existingMap[s] ? existingMap[s].__backendId : '';
+            const bgClass = val !== '' ? 'bg-amber-50/30' : 'bg-white';
+            
+            html += `<div class="simple-row flex items-center justify-between p-3 ${bgClass}" data-id="${id}" data-student="${s}"><div class="flex gap-2 w-1/2 overflow-hidden items-center"><span class="text-xs text-gray-400 w-5">${i+1}.</span><span class="text-xs md:text-sm font-semibold text-gray-700 truncate">${s}</span></div><div class="flex gap-2 w-1/2 justify-end"><input type="number" class="grade-input w-16 p-2 text-center text-sm font-bold border border-gray-200 rounded-lg focus:border-amber-500 focus:bg-white outline-none" placeholder="0" value="${val}"><input type="text" class="note-input w-full p-2 text-xs border border-gray-200 rounded-lg focus:border-amber-500 focus:bg-white outline-none" placeholder="Ket..." value="${note}"></div></div>`; 
+        });
+        
+        html += `</div><div class="p-3 bg-gray-50 border-t border-gray-100"><button onclick="saveAllGrades()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-amber-500/30 active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-save"></i> SIMPAN NILAI</button></div></div>`;
+        container.innerHTML = html;
+    };
+
+    // --- SAVE FUNCTIONS (UPDATED FOR FETCH API) ---
+    window.saveAllAttendance = async () => { 
+        const rows = document.querySelectorAll('#att-rows .simple-row'); 
+        if(rows.length === 0) return; 
+        
+        const sessionString = getSessionString();
+        if(!sessionString) { Swal.fire({icon: 'warning', title: 'Pilih Jam Pelajaran', text: 'Silakan pilih setidaknya satu jam pelajaran.'}); return; }
+        if (!currentProofBase64) { Swal.fire({ icon: 'warning', title: 'Foto Wajib Diisi', text: 'Harap ambil foto kegiatan.', confirmButtonColor: '#4F46E5' }); return; }
+
+        const records = []; const date = document.getElementById('att-date').value; const cls = document.getElementById('att-class').value; const sub = document.getElementById('att-subject').value; 
+        
+        rows.forEach(row => { 
+            records.push({ __backendId: row.getAttribute('data-id'), type: 'attendance', date, class_name: cls, subject: sub, student_name: row.getAttribute('data-student'), status: row.querySelector('.status-select').value, topic: '', notes: '', grade_value: 0, grade_type: '', grade_title: sessionString, proof_image: currentProofBase64 }); 
+        }); 
+        
+        showLoading(true); 
+        allData = await apiCall('batchSave', records, 'POST');
+        showLoading(false); 
+        showToast('Data absensi tersimpan.'); 
+        
+        document.getElementById('att-class').value = ""; document.getElementById('att-subject').value = "";
+        selectedSessions.clear(); renderSessionButtons();
+        currentProofBase64 = ""; stopCamera(); 
+        document.getElementById('cam-result-view').classList.add('hidden'); document.getElementById('cam-live-view').classList.add('hidden'); document.getElementById('cam-init-view').classList.remove('hidden'); document.getElementById('img-result').src = "";
+        renderStudentList(); renderAttendanceHistory(); 
+    };
+
+    window.saveAllGrades = async () => { 
+        const rows = document.querySelectorAll('#grade-rows > div'); 
+        if(rows.length === 0) return;
+        const date = document.getElementById('grade-date').value; const cls = document.getElementById('grade-class').value; const sub = document.getElementById('grade-subject').value; const type = document.getElementById('grade-type').value; const num = document.getElementById('grade-number').value; const title = `${type} ${num}`;
+        let emptyCount = 0; const records = [];
+        rows.forEach(row => { let val = row.querySelector('.grade-input').value; let note = row.querySelector('.note-input').value; if (val === "") { emptyCount++; } else { records.push({ __backendId: row.getAttribute('data-id'), type: 'grade', date: date, class_name: cls, subject: sub, student_name: row.getAttribute('data-student'), grade_value: val, grade_type: type, grade_title: title, status: '', topic: '', notes: note }); } });
+        
+        const processSave = async (finalRecords) => { 
+            showLoading(true); 
+            allData = await apiCall('batchSave', finalRecords, 'POST');
+            showLoading(false); 
+            showToast(`${finalRecords.length} Nilai tersimpan.`); 
+            document.getElementById('grade-class').value = ""; renderGradeList(); renderGradeHistory(); 
+        };
+
+        if (emptyCount > 0) { 
+            Swal.fire({ title: 'Simpan?', text: `${emptyCount} siswa nilai kosong (akan dianggap 0).`, icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Simpan' }).then((result) => { if (result.isConfirmed) { const forcedRecords = []; rows.forEach(row => { let val = row.querySelector('.grade-input').value; let note = row.querySelector('.note-input').value; if(val === "") val = "0"; forcedRecords.push({ __backendId: row.getAttribute('data-id'), type: 'grade', date: date, class_name: cls, subject: sub, student_name: row.getAttribute('data-student'), grade_value: val, grade_type: type, grade_title: title, status: '', topic: '', notes: note }); }); processSave(forcedRecords); } }); 
+        } else { processSave(records); }
+    };
+
+    document.getElementById('journal-form').addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const id = document.getElementById('jrn-id').value; 
+        const record = { __backendId: id, type: 'journal', date: document.getElementById('jrn-date').value, class_name: document.getElementById('jrn-class').value, subject: document.getElementById('jrn-subject').value, topic: document.getElementById('jrn-topic').value, notes: document.getElementById('jrn-notes').value, student_name: '', status: '', grade_value: 0, grade_type: '', grade_title: '' }; 
+        showLoading(true); 
+        allData = await apiCall(id ? 'batchSave' : 'createData', id ? [record] : record, 'POST');
+        showLoading(false); 
+        showToast('Jurnal tersimpan'); resetJournalForm(); renderJournalList(); 
+    });
+
+    window.deleteData = (id) => { 
+        Swal.fire({ title: 'Hapus?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Ya' }).then(async (result) => { 
+            if (result.isConfirmed) { 
+                showLoading(true); 
+                allData = await apiCall('deleteData', {id: id}, 'POST');
+                showLoading(false); 
+                renderJournalList(); renderGradeHistory(); showToast('Terhapus'); 
+            } 
+        }) 
+    };
+
+    window.deleteBatchData = (idString) => { 
+        Swal.fire({ title: 'Hapus Sesi?', text: 'Semua data dalam sesi ini akan dihapus.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Ya, Hapus' }).then(async (result) => { 
+            if (result.isConfirmed) { 
+                const ids = idString.split(','); 
+                showLoading(true); 
+                for (let i = 0; i < ids.length; i++) { await apiCall('deleteData', {id: ids[i]}, 'POST'); }
+                allData = await apiCall('getAllData');
+                showLoading(false); renderAttendanceHistory(); renderGradeHistory(); showToast('Sesi dihapus'); 
+            } 
+        }); 
+    };
+
+    // --- LOADERS (UI) ---
+    window.loadAttendanceSession = (date, cls, sub, sessionString) => { 
+        document.getElementById('att-date').value = date; document.getElementById('att-class').value = cls; document.getElementById('att-subject').value = sub; 
+        selectedSessions.clear();
+        if(sessionString && sessionString.startsWith("Jam ")) { const parts = sessionString.replace("Jam ", "").split(","); parts.forEach(p => { const num = parseInt(p.trim()); if(!isNaN(num)) selectedSessions.add(num); }); }
+        renderSessionButtons(); renderStudentList(); switchTab('absensi'); showToast("Mode Edit Aktif"); 
+    };
+    window.loadJournalSession = (id, date, cls, sub, topic, notes) => { document.getElementById('jrn-id').value = id; document.getElementById('jrn-date').value = date; document.getElementById('jrn-class').value = cls; document.getElementById('jrn-subject').value = sub; document.getElementById('jrn-topic').value = topic; document.getElementById('jrn-notes').value = notes; const btn = document.getElementById('btn-save-jurnal'); btn.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Update'; btn.classList.remove('bg-secondary', 'hover:bg-emerald-600'); btn.classList.add('bg-orange-500', 'hover:bg-orange-600'); document.getElementById('btn-reset-jurnal').classList.remove('hidden'); switchTab('jurnal'); showToast("Mode Edit Aktif"); };
+    window.resetJournalForm = () => { document.getElementById('journal-form').reset(); document.getElementById('jrn-id').value = ''; document.getElementById('jrn-date').value = getLocalDate(); const btn = document.getElementById('btn-save-jurnal'); btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan'; btn.classList.add('bg-secondary', 'hover:bg-emerald-600'); btn.classList.remove('bg-orange-500', 'hover:bg-orange-600'); document.getElementById('btn-reset-jurnal').classList.add('hidden'); };
+    window.loadGradeSession = (cls, sub, title, date) => { const parts = title.split(' '); const type = parts[0]; const num = parts.length > 1 ? parts[1] : "1"; document.getElementById('grade-class').value = cls; document.getElementById('grade-subject').value = sub; document.getElementById('grade-type').value = type; document.getElementById('grade-number').value = num; document.getElementById('grade-date').value = date; renderGradeList(); switchTab('penilaian'); showToast("Mode Edit Aktif"); };
+
+    // --- HISTORY RENDERERS (Sama seperti sebelumnya) ---
+    window.renderAttendanceHistory = (nav) => { 
+        const container = document.getElementById('attendance-history-body'); if(!container) return;
+        let attData = (allData || []).filter(d => d.type && d.type.toLowerCase().includes('attend')); 
+        const filterDate = document.getElementById('hist-filter-date').value; if(filterDate) attData = attData.filter(d => String(d.date).includes(filterDate));
+        const grouped = {}; 
+        attData.forEach(d => { 
+            const shortDate = d.date ? String(d.date).substring(0,10) : 'Tanpa Tanggal'; 
+            const session = d.grade_title || 'Sesi 1';
+            const key = `${shortDate}|${d.class_name}|${d.subject}|${session}`; 
+            if (!grouped[key]) { grouped[key] = { date: shortDate, class_name: d.class_name, subject: d.subject, grade_title: session, stats: { Hadir: 0, Izin: 0, Sakit: 0, Alpha: 0 }, ids: [], proof_image: d.proof_image || '' }; } 
+            if(d.proof_image && !grouped[key].proof_image) grouped[key].proof_image = d.proof_image;
+            const status = d.status || 'Hadir'; if (grouped[key].stats[status] !== undefined) grouped[key].stats[status]++; grouped[key].ids.push(d.__backendId); 
+        }); 
+        const sortedGroups = Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date)); 
+        const totalItems = sortedGroups.length; const maxPage = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if(nav === 'next' && pageAtt < maxPage) pageAtt++; else if(nav === 'prev' && pageAtt > 1) pageAtt--;
+        const start = (pageAtt - 1) * ITEMS_PER_PAGE; const end = start + ITEMS_PER_PAGE; const slicedGroups = sortedGroups.slice(start, end);
+        renderPaginationControls('pagination-att', totalItems, pageAtt, 'renderAttendanceHistory');
+        if(slicedGroups.length === 0) { container.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-xs text-gray-400">Data tidak ditemukan.</td></tr>`; return; } 
+        container.innerHTML = slicedGroups.map(g => `<tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0"><td class="p-3 whitespace-nowrap text-xs font-semibold text-gray-600">${g.date}</td><td class="p-3"><div class="flex flex-col"><span class="text-xs font-bold text-gray-800">${g.subject} <span class="text-[10px] font-normal text-gray-500">(${g.grade_title})</span></span><span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded w-fit mt-1">${g.class_name}</span></div></td><td class="p-3 hidden md:table-cell text-center"><div class="flex justify-center gap-2 text-[10px] font-bold"><span class="text-green-600 bg-green-50 px-1.5 py-0.5 rounded">H:${g.stats.Hadir}</span><span class="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">S:${g.stats.Sakit}</span><span class="text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">I:${g.stats.Izin}</span><span class="text-red-600 bg-red-50 px-1.5 py-0.5 rounded">A:${g.stats.Alpha}</span></div></td><td class="p-3 text-center">${g.proof_image ? `<button onclick="viewPhoto('${g.proof_image}')" class="text-indigo-600 hover:text-indigo-800 transition-colors bg-indigo-50 w-8 h-8 rounded-full flex items-center justify-center mx-auto shadow-sm"><i class="fa-solid fa-image"></i></button>` : '<span class="text-gray-300 text-xs">-</span>'}</td><td class="p-3 text-right"><div class="flex justify-end gap-2"><button onclick="loadAttendanceSession('${g.date}','${g.class_name}','${g.subject}', '${g.grade_title}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteBatchData('${g.ids.join(',')}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Hapus"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>`).join(''); 
+    };
+
+    window.renderJournalList = (nav) => { 
+        const safeData = allData || []; const jrnData = safeData.filter(d => d.type === 'journal').sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+        const totalItems = jrnData.length; const maxPage = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if(nav === 'next' && pageJrn < maxPage) pageJrn++; else if(nav === 'prev' && pageJrn > 1) pageJrn--;
+        const start = (pageJrn - 1) * ITEMS_PER_PAGE; const end = start + ITEMS_PER_PAGE; const slicedData = jrnData.slice(start, end);
+        renderPaginationControls('pagination-jrn', totalItems, pageJrn, 'renderJournalList');
+        const container = document.getElementById('journal-list'); if(slicedData.length === 0) { container.innerHTML = `<p class="text-center text-xs text-gray-400">Belum ada jurnal.</p>`; return; } 
+        container.innerHTML = slicedData.map(d => `<div onclick="loadJournalSession('${d.__backendId}', '${d.date}', '${d.class_name}', '${d.subject}', '${d.topic.replace(/'/g, "\\'")}', '${d.notes.replace(/'/g, "\\'")}')" class="clickable-card bg-white p-4 rounded-xl border border-emerald-100 shadow-sm relative"><button onclick="event.stopPropagation(); deleteData('${d.__backendId}')" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash-can text-xs"></i></button><div class="flex gap-2 mb-2"><span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-md">${d.class_name}</span><span class="text-xs font-bold text-gray-700 self-center">${d.subject}</span></div><h4 class="font-bold text-gray-800 text-sm mb-1">${d.topic}</h4><p class="text-xs text-gray-500 line-clamp-2">${d.notes}</p><div class="mt-2 text-[9px] text-gray-400 text-right border-t pt-1 border-gray-50">${d.date}</div></div>`).join(''); 
+    };
+
+    window.renderGradeHistory = (nav) => { 
+        const fSub = document.getElementById('hist-filter-grade-subject').value; const fType = document.getElementById('hist-filter-grade-type').value; 
+        let list = (allData || []).filter(d => d.type === 'grade'); if(fSub) list = list.filter(d => d.subject === fSub); if(fType) list = list.filter(d => d.grade_type === fType); 
+        const grouped = {}; list.forEach(g => { const key = `${g.date}|${g.class_name}|${g.subject}|${g.grade_title}`; if(!grouped[key]) grouped[key] = { ...g, count: 0, ids: [] }; grouped[key].count++; grouped[key].ids.push(g.__backendId); }); 
+        const groupedArray = Object.values(grouped).sort((a,b) => new Date(b.date) - new Date(a.date));
+        const totalItems = groupedArray.length; const maxPage = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if(nav === 'next' && pageGrade < maxPage) pageGrade++; else if(nav === 'prev' && pageGrade > 1) pageGrade--;
+        const start = (pageGrade - 1) * ITEMS_PER_PAGE; const end = start + ITEMS_PER_PAGE; const slicedData = groupedArray.slice(start, end);
+        renderPaginationControls('pagination-grade', totalItems, pageGrade, 'renderGradeHistory');
+        const container = document.getElementById('grade-history-body'); if(slicedData.length === 0) { container.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-xs text-gray-400">Data tidak ditemukan.</td></tr>`; return; } 
+        container.innerHTML = slicedData.map(g => `<tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0"><td class="p-3 whitespace-nowrap text-xs font-semibold text-gray-600">${g.date}</td><td class="p-3"><div class="flex flex-col"><span class="text-xs font-bold text-gray-800">${g.subject}</span><span class="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded w-fit mt-1">${g.class_name}</span></div></td><td class="p-3 text-xs font-semibold text-amber-600">${g.grade_title}</td><td class="p-3 text-center text-xs font-bold text-gray-600">${g.count}</td><td class="p-3 text-right"><div class="flex justify-end gap-2"><button onclick="loadGradeSession('${g.class_name}', '${g.subject}', '${g.grade_title}', '${g.date}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteBatchData('${g.ids.join(',')}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors" title="Hapus"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>`).join(''); 
+    };
+
+    // --- REKAP RENDERERS ---
+    window.renderRekapAbsensi = () => { 
+        try {
+            const cls = document.getElementById('rekap-class').value; const start = document.getElementById('rekap-start').value; const end = document.getElementById('rekap-end').value; const tableBody = document.getElementById('rekap-table-body'); 
+            if(!cls) { tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">Pilih Kelas terlebih dahulu.</td></tr>'; document.getElementById('rekap-count').innerText = "0"; return; } 
+            let dbData = allData.filter(d => d.type && String(d.type).toLowerCase().includes('attend') && String(d.class_name).trim() === cls);
+            if(start || end) { dbData = dbData.filter(d => { const dDate = d.date ? String(d.date).substring(0, 10) : ""; if(start && dDate < start) return false; if(end && dDate > end) return false; return true; }); } 
+            document.getElementById('rekap-count').innerText = dbData.length;
+            const stats = {}; const manualList = studentsByClass[cls] || []; manualList.forEach(name => { stats[name] = { H:0, S:0, I:0, A:0, Total:0 }; });
+            dbData.forEach(d => { const name = String(d.student_name || "Tanpa Nama").trim(); if (!stats[name]) { stats[name] = { H:0, S:0, I:0, A:0, Total:0 }; } const status = String(d.status || "Hadir"); if (status === 'Hadir') stats[name].H++; else if (status === 'Sakit') stats[name].S++; else if (status === 'Izin') stats[name].I++; else if (status === 'Alpha') stats[name].A++; stats[name].Total++; });
+            const sortedNames = Object.keys(stats).sort(); if (sortedNames.length === 0) { tableBody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-gray-400">Tidak ada nama siswa ditemukan.</td></tr>'; return; }
+            const rowsHTML = sortedNames.map(name => { const s = stats[name]; const rowClass = s.A > 2 ? "bg-red-50 text-red-600 font-bold" : "hover:bg-gray-50"; return `<tr class="${rowClass} border-b border-gray-100"><td class="text-left font-medium px-3 py-2 text-gray-700 text-xs">${name}</td><td class="text-green-600 font-bold text-center bg-green-50/30">${s.H}</td><td class="text-blue-600 font-bold text-center bg-blue-50/30">${s.S}</td><td class="text-yellow-600 font-bold text-center bg-yellow-50/30">${s.I}</td><td class="text-red-600 font-bold text-center bg-red-50/30">${s.A}</td><td class="font-bold text-center bg-gray-100 text-gray-600">${s.Total}</td></tr>`; }).join('');
+            tableBody.innerHTML = rowsHTML;
+        } catch (err) { alert("Error Tampilan: " + err.message); }
+    };
+
+    window.renderRekapNilai = () => { 
+        try {
+            const cls = document.getElementById('nilai-filter-class').value; const sub = document.getElementById('nilai-filter-subject').value; const tbody = document.getElementById('nilai-table-body'); const thead = document.getElementById('nilai-table-head');
+            if(!cls || !sub) { tbody.innerHTML = '<tr><td colspan="2" class="p-6 text-center text-gray-400">Wajib pilih Kelas dan Mapel.</td></tr>'; return; } 
+            let dbData = allData.filter(d => d.type === 'grade' && String(d.class_name) === cls && String(d.subject) === sub);
+            const manualList = studentsByClass[cls] || []; const studentMap = {}; manualList.forEach(name => studentMap[name] = {});
+            const colMap = { "Tugas": new Set(), "Kuis": new Set(), "UH": new Set(), "STS": new Set(), "SAS": new Set() };
+            dbData.forEach(d => { const name = String(d.student_name || "Tanpa Nama").trim(); if (!studentMap[name]) studentMap[name] = {}; const gType = String(d.grade_type || ""); const gNum = parseInt(String(d.grade_title || "").split(' ')[1] || 1); studentMap[name][`${gType} ${gNum}`] = parseFloat(d.grade_value || 0); if(gType === "Tugas") colMap.Tugas.add(gNum); else if(gType === "Kuis") colMap.Kuis.add(gNum); else if(gType === "UH") colMap.UH.add(gNum); else if(gType === "STS") colMap.STS.add(1); else if(gType === "SAS") colMap.SAS.add(1); });
+            let headerHTML = '<tr><th class="text-left w-32 sticky left-0 bg-white z-10 border-r shadow-sm">Nama Siswa</th>';
+            const genHeaders = (lbl, set, cls) => { const arr = Array.from(set).sort((a,b)=>a-b); arr.forEach(n => headerHTML += `<th class="${cls}">${lbl}${n}</th>`); if(arr.length>0) headerHTML += `<th class="${cls} font-black border-r-2">Avg</th>`; return arr; };
+            const tCols = genHeaders("T", colMap.Tugas, "th-tugas"); const kCols = genHeaders("K", colMap.Kuis, "th-kuis"); const uhCols = genHeaders("UH", colMap.UH, "th-uh");
+            const hasSTS = colMap.STS.size > 0; if(hasSTS) headerHTML += '<th class="th-sts font-black border-r-2">STS</th>';
+            const hasSAS = colMap.SAS.size > 0; if(hasSAS) headerHTML += '<th class="th-sas font-black border-r-2">SAS</th>';
+            headerHTML += '<th class="th-final font-black text-white bg-gray-700">NA</th></tr>'; thead.innerHTML = headerHTML;
+            const sortedNames = Object.keys(studentMap).sort(); if(sortedNames.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-gray-400">Data kosong.</td></tr>'; return; }
+            const rowsHTML = sortedNames.map(name => {
+                const scores = studentMap[name]; let row = `<tr><td class="text-left font-medium text-xs sticky left-0 bg-white z-10 border-r px-2 py-1 text-gray-700 shadow-sm">${name}</td>`;
+                const calcAvg = (lbl, cols) => { let s=0, c=0; cols.forEach(n => { const v = scores[`${lbl} ${n}`]; const display = (v === undefined || v === null) ? '-' : v; row += `<td class="text-center text-gray-600">${display}</td>`; if(v !== undefined) { s+=v; c++; } }); const avg = c>0 ? s/c : 0; if(cols.length>0) row += `<td class="font-bold text-center border-r-2 bg-gray-50">${avg > 0 ? avg.toFixed(0) : '-'}</td>`; return avg; };
+                const aT = calcAvg("Tugas", tCols); const aK = calcAvg("Kuis", kCols); const aUH = calcAvg("UH", uhCols);
+                const vSTS = scores["STS 1"] || 0; if(hasSTS) row += `<td class="font-bold text-center text-pink-600 border-r-2 bg-pink-50">${vSTS||'-'}</td>`;
+                const vSAS = scores["SAS 1"] || 0; if(hasSAS) row += `<td class="font-bold text-center text-red-600 border-r-2 bg-red-50">${vSAS||'-'}</td>`;
+                const NA = (aT*0.2) + (aK*0.1) + (aUH*0.25) + (vSTS*0.15) + (vSAS*0.30); row += `<td class="font-black text-center text-white bg-gray-700">${NA > 0 ? NA.toFixed(0) : 0}</td></tr>`; return row;
+            }).join(''); tbody.innerHTML = rowsHTML;
+        } catch (err) { alert("Error Tabel Nilai: " + err.message); }
+    };
+    window.renderRekapJurnal = () => { const cls = document.getElementById('jurnal-filter-class').value; const sub = document.getElementById('jurnal-filter-subject').value; const tbody = document.getElementById('jurnal-table-body'); let dbData = allData.filter(d => d.type === 'journal'); if(cls) dbData = dbData.filter(d => d.class_name === cls); if(sub) dbData = dbData.filter(d => d.subject === sub); if(dbData.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400">Data tidak ditemukan</td></tr>`; return; } tbody.innerHTML = dbData.map(d => `<tr><td class="text-left text-[10px]">${d.date}</td><td>${d.class_name}</td><td>${d.subject}</td><td class="text-left text-[10px] font-bold">${d.topic}</td><td class="text-left text-[10px] italic text-gray-500">${d.notes}</td></tr>`).join(''); };
+    ['att-class', 'att-subject', 'att-date'].forEach(id => { const el = document.getElementById(id); if(el) el.addEventListener('change', renderStudentList); });
+    ['grade-class', 'grade-subject', 'grade-type', 'grade-number', 'grade-date'].forEach(id => { const el = document.getElementById(id); if(el) el.addEventListener('change', renderGradeList); });
+  </script>
+</body>
+</html>
